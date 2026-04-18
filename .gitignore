@@ -24,3 +24,10 @@ hs_err_pid*
 replay_pid*
 
 .DS_Store
+
+# C stuff
+*.exe
+*.i
+*.s
+*.o
+*.out
