@@ -1,11 +1,9 @@
-package lab3;
-
 public class Task {
     private final String name;
     private final int priority;
     private final int burst;
     private int remain;
-    Task(String n, int p, int b){
+    public Task(String n, int p, int b){
         name = n; priority = p; burst = b; remain = burst;
     }
     public void setRemain(int remain) {
