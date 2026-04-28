@@ -1,29 +1,53 @@
-import java.util.ArrayList;
 public class CPU {
-    private Scheduler s;
-    private ArrayList<Task> taskList;
-    private int timeQuantum;
-    CPU(Scheduler s){
-        this.s = s;
-        timeQuantum = s.getClass().getSimpleName() == "RR"? 10 : 0;
+    private Thread thr;
+    CPU(){}
+    
+    public int execute(Task task){
+        Runnable runnable = () ->{
+            try{
+                Thread.sleep(task.getRemain());
+            } catch (InterruptedException e){
+                this.interrupt();
+            }
+        };
+        thr = new Thread(runnable);
+        long start = System.currentTimeMillis();
+        thr.start();
+        try {
+           thr.join();
+        } catch (InterruptedException e){}
+        long end = System.currentTimeMillis();
+        int duration = (int)(end - start);
+        task.setRemain(Math.max(task.getRemain() - duration, 0));
+        thr = null;
+        return duration;
+    }
+    public void interrupt() {
+        if (thr != null){
+            thr.interrupt();
+        }
     }
     
     
-    public CPU(ArrayList<Task> taskList){
-        this.taskList = taskList;
+    // for RR 
+    public int execute(Task task, int quantum){
+        Runnable runnable = () ->{
+            try{
+                Thread.sleep(task.getRemain());
+            } catch (InterruptedException e){
+                this.interrupt();
+            }
+        };
+        thr = new Thread(runnable);
+        long start = System.currentTimeMillis();
+        thr.start();
+        try {
+           thr.join(quantum);
+        } catch (InterruptedException e){}
+        long end = System.currentTimeMillis();
+        int duration = (int)(end - start);
+        task.setRemain(Math.max(task.getRemain() - duration, 0));
+        thr = null;
+        return duration;
     }
-    public Scheduler getS() {
-        return s;
-    }
-    public void setS(Scheduler s) {
-        this.s = s;
-    }
-    public ArrayList<Task> getTaskList() {
-        return taskList;
-    }
-    public void setTaskList(ArrayList<Task> taskList) {
-        this.taskList = taskList;
-    }
-    
-
 }

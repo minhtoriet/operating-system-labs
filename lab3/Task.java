@@ -23,7 +23,7 @@ public class Task {
     }
     @Override
     public String toString() {
-        return "Task [name=" + name + ", priority=" + priority + ", burst=" + burst + ", remain=" + remain + "]";
+        return " : " + name + ", priority=" + priority + ", burst=" + burst + ", remain=" + remain;
     }
     
 }
