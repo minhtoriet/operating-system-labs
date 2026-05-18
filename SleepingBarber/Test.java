@@ -29,6 +29,7 @@ public class Test {
                 barberJob();
             } 
         });
+        //this.barberThread = new Thread(this::barberJob);
         this.customerThread = new Thread(new Runnable (){
             public void run(){
                 customerVisit();
@@ -36,18 +37,28 @@ public class Test {
         });
     }
     private void barberJob (){
-        while (this.running){
+        while (this.running && !Thread.currentThread().isInterrupted()){
             lock.lock();
             try {
                 while (customerCount == 0) notEmptyCondition.await();
 
                 customerCount--;
-                System.out.println("customer shaved. Total customer left: "+customerCount);
+                System.out.println("customer acquired. Total customer left: "+customerCount);
                 notFullCondition.signal();
-            } catch (InterruptedException ie) {ie.printStackTrace();}
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
             finally {
                 lock.unlock();
             }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ie){
+                Thread.currentThread().interrupt();
+                break;
+            }
+            System.out.println("customer shaved");
         }
     }
     public void shutdown (){
@@ -60,7 +71,7 @@ public class Test {
         }catch (InterruptedException ie) {ie.printStackTrace();}
     }
     public void customerVisit(){
-        while (this.running){
+        while (this.running && !Thread.currentThread().isInterrupted()){
             lock.lock();
             try{
                 while (customerCount == MAX_CHAIR) notFullCondition.await();
@@ -68,8 +79,17 @@ public class Test {
                 customerCount++;
                 notEmptyCondition.signal();
                 System.out.println("1 customer joined the line. Total customer waiting: " +customerCount);
-            } catch(InterruptedException ie){ie.printStackTrace();}
+            } catch(InterruptedException ie){
+                Thread.currentThread().interrupt();
+                break;
+            }
             finally {lock.unlock();}
+            try {
+                Thread.sleep((int)(1000 * Math.random()));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
     }
 }
