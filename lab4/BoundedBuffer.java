@@ -2,29 +2,37 @@ package lab4;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class TSQueue<E> {
+public class BoundedBuffer<E> {
     private Queue<E> queue = new ArrayDeque<E>();
-    Lock lock = new ReentrantLock();
-    Condition notEmptyCondition = lock.newCondition();
-    public TSQueue(){}
+    private final int maxSize;
+    private final Lock lock = new ReentrantLock();
+    private final Condition notEmptyCondition = lock.newCondition();
+    private final Condition notFullCondition = lock.newCondition();
+    public BoundedBuffer(int size){
+        this.maxSize = size;
+    }
 
-    public void addLast (E item){
+    public void add (E item){
         lock.lock();
         try {
+            while (currentSize() == maxSize) notFullCondition.await();
             queue.add(item);
             notEmptyCondition.signal();
-        } 
+        } catch (InterruptedException ie){
+            Thread.currentThread().interrupt();
+        }
         finally {lock.unlock();}
     }    
 
-    public E removeFirst (){
+    public E remove (){
         lock.lock();
         try {
-            while (getSize() == 0) notEmptyCondition.await();
+            while (currentSize() == 0) notEmptyCondition.await();
+            notFullCondition.signal();
             return queue.poll();
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
@@ -33,29 +41,25 @@ public class TSQueue<E> {
         finally {lock.unlock();}
     }
 
-    public int getSize (){
+    public int currentSize (){
         lock.lock();
         try {
             return queue.size();
         } finally {lock.unlock();}
     }
-
-
-
-    static TSQueue<Integer> tsqueue = new TSQueue<>();
+    static BoundedBuffer<Integer> bb = new BoundedBuffer<>(15);
     public static void main(String[] args) {
-        
         Thread t1 = new Thread(new Runnable(){
             public void run(){
                 for (int i = 0; i < 1000000; i++) {
-                    tsqueue.addLast(i);
+                    bb.add(i);
                 }
             }
         });
         Thread t2 = new Thread(new Runnable(){
             public void run(){
                 for (int i = 0; i < 1000000; i++) {
-                    tsqueue.removeFirst();
+                    bb.remove();
                 }
             }
         });
@@ -65,6 +69,7 @@ public class TSQueue<E> {
             t1.join();
             t2.join();
         } catch (InterruptedException ie){ie.printStackTrace();}
-        System.out.println(tsqueue.getSize());
+        System.out.println(bb.currentSize()); 
+
     }
 }
