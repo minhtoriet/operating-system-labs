@@ -1,8 +1,8 @@
-package lab4;
+package lab4_1;
 
 import java.util.concurrent.Semaphore;
 
-public class HELLO {
+class HELLO {
     public static void main(String[] args) {
         Semaphore s1 = new Semaphore(1);
         Semaphore s2 = new Semaphore(0);

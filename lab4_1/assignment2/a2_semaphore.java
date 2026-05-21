@@ -1,4 +1,4 @@
-package lab4.assignment2;
+package lab4_1.assignment2;
 
 import java.util.concurrent.Semaphore;
 

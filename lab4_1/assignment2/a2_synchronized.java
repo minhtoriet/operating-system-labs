@@ -1,26 +1,24 @@
-package lab4.assignment2;
+package lab4_1.assignment2;
 
-import java.util.concurrent.locks.*;
-
-public class a2_reentrantlock {
+public class a2_synchronized {
     static int a = 0;
-    static Lock lock = new ReentrantLock();
+    static final Object o = new Object();
     public static void main(String[] args) {
         Thread t1 = new Thread(new Runnable(){
             public void run(){
                 for (int i = 0; i < 1000000; i++) {
-                    lock.lock();
-                    a++;
-                    lock.unlock();
+                    synchronized(o){
+                        a++;
+                    }                
                 }
             }
         });
         Thread t2 = new Thread(new Runnable(){
             public void run(){
                 for (int i = 0; i < 1000000; i++) {
-                    lock.lock();
-                    a--;
-                    lock.unlock();
+                    synchronized(o){
+                        a--;
+                    }
                 }
             }
         });
