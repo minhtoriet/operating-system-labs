@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.*;
 
-class WaterFactory {
+class WaterFactory implements IWaterFactory{
     private int molecueCount;
     private int oxygenCount;
     private int hydrogenCount;
@@ -16,6 +16,7 @@ class WaterFactory {
         try {
             while (hydrogenCount == 2) enoughCond.await();
             hydrogenCount++;
+            System.out.println("1 hydrogen joined");
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -28,6 +29,7 @@ class WaterFactory {
         try {
             while (oxygenCount == 1) enoughCond.await();
             oxygenCount++;
+            System.out.println("1 oxygen joined");
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -67,24 +69,29 @@ class WaterFactory {
     }
 }
 class HydrogenThread extends Thread {
-    WaterFactory wf;
-    HydrogenThread (WaterFactory wf) {this.wf = wf;}
+    IWaterFactory wf;
+    HydrogenThread (IWaterFactory wf) {this.wf = wf;}
     public void run(){
         try {
             Thread.sleep(100 + (int)(300*Math.random()));
         } catch (InterruptedException ie) {Thread.currentThread().interrupt();}
-        System.out.println("1 hydrogen joined");
+        
         wf.hydrogen();
     }
 }
 class OxygenThread extends Thread {
-    WaterFactory wf;
-    OxygenThread (WaterFactory wf) {this.wf = wf;}
+    IWaterFactory wf;
+    OxygenThread (IWaterFactory wf) {this.wf = wf;}
     public void run(){
         try {
             Thread.sleep(100 + (int)(300*Math.random()));
         } catch (InterruptedException ie) {Thread.currentThread().interrupt();}
-        System.out.println("1 oxygen joined");
+        
         wf.oxygen();
     }
+}
+interface IWaterFactory {
+    public void hydrogen();
+    public void oxygen();
+    public void generateWater();
 }
