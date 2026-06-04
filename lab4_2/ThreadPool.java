@@ -7,23 +7,95 @@ import java.util.Queue;
 import java.util.concurrent.locks.*;
 
 public class ThreadPool {
-
-}
-class TSList<E> {
     private int size;
+    AtomicInteger taskNum = new AtomicInteger(0);
+    private TSList<Runnable> list;
+    private TSQueue<Runnable> queue = new TSQueue<>();
+    private final List<Worker> workers;
+    public ThreadPool (int size) {
+        this.size = size;
+        list = new TSList<>(size);
+        workers = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            Worker worker = new Worker();
+            workers.add(worker);
+            worker.start();
+        }
+    }
+
+    public ThreadPool () {
+        this(4);
+    }
+
+    public void add (Runnable item){
+        taskNum.increment();
+        if (list.currentSize() < size) list.add(item);
+        else queue.addLast(item);
+    }
+
+    public void onCompletion(){
+        if (taskNum.decrement() == 0) {
+            System.out.println("test");
+        }
+    }
+
+    private class Worker extends Thread{
+        public void run(){
+            while (true) {
+                Runnable task = queue.removeFirst();
+                if (task == null) break;
+                try {
+                    task.run();
+                } catch (RuntimeException re) {re.printStackTrace();}
+                finally {
+                    onCompletion();
+                }            
+            }
+        }
+    }
+}
+
+class AtomicInteger {
+    private int a;
+    Lock lock = new ReentrantLock();
+    public AtomicInteger (int a){
+        this.a = a;
+    }
+    public int increment () {
+        lock.lock();
+        try {
+            return ++a;
+        } finally {
+            lock.unlock();
+        }
+    }
+    public int decrement () {
+        lock.lock();
+        try {
+            return --a;
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+
+class TSList<E> {
     private List<E> list;
     private Lock lock = new ReentrantLock();
-    private Condition isAvailableCondition = lock.newCondition();
     public TSList(int size) {
         list = new ArrayList<>(size);
     }
     public void add (E item){
         lock.lock();
         try{
-            
+            list.add(item);
         } finally {lock.unlock();}
     }
+    public int currentSize() {
+        return list.size();
+    }
 }
+
 class TSQueue<E> {
     private Queue<E> queue = new ArrayDeque<E>();
     private Lock lock = new ReentrantLock();
@@ -42,11 +114,14 @@ class TSQueue<E> {
     public E removeFirst (){
         lock.lock();
         try {
-            while (getSize() == 0) notEmptyCondition.await();
+            while (getSize() == 0) {
+                try {
+                    notEmptyCondition.await();
+                } catch (InterruptedException ie) {
+                    return null;
+                }
+            } 
             return queue.poll();
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return null;
         } 
         finally {lock.unlock();}
     }
