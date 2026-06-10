@@ -41,7 +41,8 @@ public class Bank {
                 lockTo.lock();
             }
         }
-        //apply Ostrich Algorithm in edge cases where System.identityHashCode(from) == System.identityHashCode(to) 
+        //apply Ostrich Algorithm in edge cases where
+        //System.identityHashCode(from) == System.identityHashCode(to) 
         //and deadlock happens (ignore it)
         try {
             if (from.getBalance() < amount) return false;

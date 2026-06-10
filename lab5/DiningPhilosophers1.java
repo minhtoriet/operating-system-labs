@@ -32,27 +32,27 @@ class Philisopher extends Thread{
         while (!Thread.currentThread().isInterrupted()){
             this.think();
             if (id % 2 == 0){
+                locks[(id + 1) % 5].lock();
+                locks[id].lock();
                 try {
-                    locks[(id + 1) % 5].lock();
-                    locks[id].lock();
-                    System.out.println("philisopher "+id+" acquired two forks");
+                    System.out.println("philosopher "+id+" acquired two forks");
                     this.eat();
                 } finally {
                     locks[(id + 1) % 5].unlock();
                     locks[id].unlock();
-                    System.out.println("philisopher "+id+" released two forks");
+                    System.out.println("philosopher "+id+" released two forks");
                 }
             }
             else {
+                locks[id].lock();
+                locks[(id + 1) % 5].lock();
                 try {
-                    locks[id].lock();
-                    locks[(id + 1) % 5].lock();
-                    System.out.println("philisopher "+id+" acquired two forks");
+                    System.out.println("philosopher "+id+" acquired two forks");
                     this.eat();
                 } finally {
                     locks[(id + 1) % 5].unlock();
                     locks[id].unlock();
-                    System.out.println("philisopher "+id+" released two forks");
+                    System.out.println("philosopher "+id+" released two forks");
                 }
             }
         }
@@ -60,7 +60,7 @@ class Philisopher extends Thread{
     public void think(){
         try{
             Thread.sleep(100 + (int)(300*Math.random()));
-            System.out.println("philosophopher "+id+" is hungry");
+            System.out.println("philosopher "+id+" is hungry");
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -68,7 +68,7 @@ class Philisopher extends Thread{
     public void eat(){
         try{
             Thread.sleep(50 + (int)(150*Math.random()));
-            System.out.println("philisopher "+id+" ate");
+            System.out.println("philosopher "+id+" ate");
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
