@@ -2,6 +2,8 @@ package VMM;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
+
 
 public class VMM {
     private int pageNum;
@@ -16,13 +18,13 @@ public class VMM {
     private int pageFaultCount = 0;
 
     public VMM(int vmSize, int pmSize, int pageSize, int tlbEntryNum, String bsFileName) throws IOException {
-        this.pageNum = vmSize / pageSize;
-        this.pageSize = pageSize;
-        this.frameNum = pmSize / pageSize;
+        this.pageNum = vmSize / pageSize;   // 65536 / 256 = 256 pages
+        this.pageSize = pageSize;           // 256 bytes
+        this.frameNum = pmSize / pageSize;  // 8192 / 256 = 32 frames
 
-        this.tlb = new TLB(tlbEntryNum);
-        this.pageTable = new PageTable(this.frameNum);
-        this.memory = new byte[pmSize];
+        this.tlb = new TLB(tlbEntryNum);    // 16 entries translation lookaside buffer
+        this.pageTable = new PageTable(this.frameNum, this.pageNum);  // should be 256 entries tho?
+        this.memory = new byte[pmSize];     // 8192 bytes physical memory
         this.backingFile = new RandomAccessFile(bsFileName, "r");
         if (this.pageNum * this.pageSize != this.backingFile.length())
             throw new IllegalArgumentException("Backing file lenth is invalid.");
@@ -42,16 +44,18 @@ public class VMM {
         frame = this.pageTable.getFrame(page);
         if (frame >= 0) {
             // ??? Update TLB
+            tlb.replace(page, frame);
             return this.memory[frame * this.pageSize + offset];
         }
 
         // Page fault
         this.pageFaultCount++;
-        frame = this.pageTable.replace(page);
-        this.swapin(page, frame);
+        frame = this.pageTable.replace(page);   // replace this invalid page with whatever frame there is,
+        this.swapin(page, frame);               // delete the duplicate frame anywhere else on the page table
 
         // ???? update TLB
-        
+        tlb.invalidateFrame(frame);
+        tlb.replace(page, frame);               // simple update
         return this.memory[frame * this.pageSize + offset];
     }
 
@@ -73,6 +77,7 @@ public class VMM {
             try {
                 this.backingFile.close();
             } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -94,34 +99,77 @@ class TLB {
     }
 
     public int getFrame(int page) {
-        int entry = this.policy.access(page);
-        if (entry == -1)
-            return -1;  // TLB miss
-
-        // TLB hit
-        return this.tlb[entry][1];
+        for (int i = 0; i < entryNum; i++) {
+            if (tlb[i][0] == page) {
+                this.policy.access(page); 
+                return tlb[i][1];
+            }
+        }
+        return -1;
     }
 
     public void replace(int page, int frame) {
         // ???
+        int victim = policy.replace(page);
+        tlb[victim][0] = page;
+        tlb[victim][1] = frame;
+    }
+    public void invalidateFrame(int frame){
+        for (int i = 0; i < tlb.length; i++) {
+            if (tlb[i][1] == frame) {
+                tlb[i][1] = -1;
+                break;
+            }
+        }
     }
 }
 
 class PageTable {
     private int frameNum;
     private ReplacementPolicy policy;
-
-    public PageTable(int frameNum) {
+    private int[] table;
+    public PageTable(int frameNum, int pageNum) {
         this.frameNum = frameNum;
         this.policy = new FIFOPolicy(this.frameNum);
+        table = new int[pageNum];
+        Arrays.fill(table, -1);
     }
 
-    public  int getFrame(int page) {
-        return this.policy.access(page);
+    public int getFrame(int page) {
+        int frame = table[page];
+        if (frame != -1) policy.access(page);
+        return frame;
     }
 
-    public int replace(int page) {
-        return this.policy.replace(page);
+    public int replace(int page) { // returns frame idx wtf
+        int frameIdx = this.policy.replace(page);
+        for (int i = 0; i < table.length; i++) {
+            if (table[i] == frameIdx){
+                table[i] = -1;
+                break;
+            }
+        }
+        table[page] = frameIdx;
+        return frameIdx;
     }
 }
 
+class FIFOPolicy implements ReplacementPolicy {
+    private int pointer;
+    private int maxSize;
+    public FIFOPolicy(int num) {
+        maxSize = num;
+    }
+    public int replace(int page){ // if full then remove first, add to last, return idx of last add
+        int victim = pointer;
+        pointer = (pointer + 1) % maxSize;
+        return victim;
+    }
+    public void access(int page){
+    }
+}
+
+interface ReplacementPolicy {
+    public int replace(int page);
+    public void access(int page);
+}

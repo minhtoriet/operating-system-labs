@@ -15,7 +15,7 @@ public class VMMMain {
         VMM vmm = null;
         BufferedReader addressReader = null;
         try {
-            vmm = new VMM(65535, 8192, 256, 16, bsFileName);
+            vmm = new VMM(65536, 8192, 256, 16, bsFileName);
             byte[] backingStore = Files.readAllBytes(Paths.get(bsFileName));
             addressReader = new BufferedReader(new FileReader(addressFileName));
             String addressLine;
