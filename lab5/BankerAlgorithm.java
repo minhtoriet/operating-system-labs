@@ -89,6 +89,6 @@ class Main {
         BankerAlgorithm ba = new BankerAlgorithm(available, max, alloc);
         System.out.println(ba.isSafeState()); //1,3,4,0,2 can do as well as 1,3,4,2,0
         int[] request = {1,0,2};
-        System.out.println(ba.request(1,request)); //should be satisfiable with 1,3,4,2,0
+        System.out.println(ba.request(1,request)); //should be satisfiable with 1,3,4,0,2
     }
 }
